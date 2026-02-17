@@ -1,0 +1,31 @@
+{
+	"name": "backend",
+	"scripts": {
+		"dev": "bun run --hot src/server/index.ts",
+		"start": "bun run dist/index.js",
+		"lint": "bunx biome check --write",
+		"compile": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/server/index.ts",
+		"db:seed": "bun run src/database/seed.ts",
+		"db:migrate": "bun run drizzle-kit migrate",
+		"db:generate": "bun run drizzle-kit generate",
+		"db:push": "bun run drizzle-kit push"
+	},
+	"dependencies": {
+		"dotenv": "^17.3.1",
+		"drizzle-cuid2": "^2.2.0",
+		"drizzle-orm": "^0.45.1",
+		"hono": "^4.11.9",
+		"hono-sessions": "^0.8.1",
+		"nodemailer": "^8.0.1",
+		"pg": "^8.18.0",
+		"zod": "^4.3.6"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.2",
+		"@types/bun": "latest",
+		"@types/nodemailer": "^7.0.10",
+		"@types/pg": "^8.16.0",
+		"drizzle-kit": "^0.31.9",
+		"tsx": "^4.21.0"
+	}
+}

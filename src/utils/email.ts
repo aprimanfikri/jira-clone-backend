@@ -2,7 +2,12 @@ import path from "node:path";
 import { HTTPException } from "hono/http-exception";
 import { env } from "@/config/env";
 
-type EmailType = "verify" | "verified" | "reset-password" | "reset-success";
+type EmailType =
+	| "verify"
+	| "verified"
+	| "reset-password"
+	| "reset-success"
+	| "invitation";
 
 interface EmailMessage {
 	subject: string;
@@ -12,6 +17,7 @@ interface EmailMessage {
 export async function generateEmailMessage(
 	type: EmailType,
 	token?: string,
+	link?: string,
 ): Promise<EmailMessage> {
 	const templatesDir = path.join(import.meta.dir, "../templates");
 
@@ -23,6 +29,7 @@ export async function generateEmailMessage(
 
 	let subject = "";
 	let html = "";
+	let actionUrl = link || "";
 
 	switch (type) {
 		case "verify":
@@ -53,13 +60,26 @@ export async function generateEmailMessage(
 			html = await readTemplate("reset-success.html");
 			break;
 
+		case "invitation":
+			if (!token && !link)
+				throw new HTTPException(400, {
+					message: "Token or Link is required for invitation email",
+				});
+			subject = "You've been invited to join an organization";
+			html = await readTemplate("invitation.html");
+			if (!actionUrl) {
+				actionUrl = `${env.FRONTEND_BASE_URL}/invitations/accept?token=${token}`;
+			}
+			break;
+
 		default:
 			throw new Error("Invalid email type");
 	}
 
 	html = html
 		.replaceAll("{{FRONTEND_BASE_URL}}", env.FRONTEND_BASE_URL)
-		.replaceAll("{{TOKEN}}", token || "");
+		.replaceAll("{{TOKEN}}", token || "")
+		.replaceAll("{{ACTION_URL}}", actionUrl);
 
 	return { subject, html };
 }

@@ -36,11 +36,11 @@ class AuthController {
 	register = async (c: Context) => {
 		const body = await c.req.json<AuthRegisterSchema>();
 		const data = authRegisterSchema.parse(body);
-		await this.authService.register(data);
+		const result = await this.authService.register(data);
 		return this.responseHandler.success(
 			c,
 			"User registered successfully",
-			undefined,
+			result,
 			RESPONSE_CODES.SUCCESS,
 			201,
 		);
@@ -121,24 +121,11 @@ class AuthController {
 	forgotPassword = async (c: Context) => {
 		const body = await c.req.json<ForgotPasswordSchema>();
 		const data = forgotPasswordSchema.parse(body);
-		await this.authService.forgotPassword(data);
+		const result = await this.authService.forgotPassword(data);
 		return this.responseHandler.success(
 			c,
 			"Please check your email to reset your password",
-			undefined,
-			RESPONSE_CODES.SUCCESS,
-			200,
-		);
-	};
-
-	resendResetPassword = async (c: Context) => {
-		const body = await c.req.json<ForgotPasswordSchema>();
-		const data = forgotPasswordSchema.parse(body);
-		await this.authService.resendResetPassword(data);
-		return this.responseHandler.success(
-			c,
-			"Reset password email sent. Please check your inbox",
-			undefined,
+			result,
 			RESPONSE_CODES.SUCCESS,
 			200,
 		);

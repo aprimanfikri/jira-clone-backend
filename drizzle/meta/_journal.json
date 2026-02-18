@@ -8,6 +8,34 @@
 			"when": 1771327916171,
 			"tag": "0000_tiresome_centennial",
 			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1771339514758,
+			"tag": "0001_gifted_hammerhead",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1771395681154,
+			"tag": "0002_soft_the_liberteens",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1771399650250,
+			"tag": "0003_flashy_scarlet_witch",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1771429347209,
+			"tag": "0004_motionless_firelord",
+			"breakpoints": true
 		}
 	]
 }

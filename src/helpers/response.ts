@@ -62,4 +62,5 @@ class ResponseHandler {
 	}
 }
 
-export default ResponseHandler.instance;
+const responseHandler = ResponseHandler.instance;
+export default responseHandler;

@@ -1,7 +1,8 @@
+import { Resend } from "resend";
 import { env } from "@/config/env";
-import { transporter } from "@/config/nodemailer";
 import { generateEmailMessage } from "@/utils/email";
 
+export const resend = new Resend(env.RESEND_API_KEY);
 class EmailHelper {
 	private static _instance: EmailHelper;
 
@@ -21,8 +22,8 @@ class EmailHelper {
 		from?: string;
 	}) {
 		try {
-			await transporter.sendMail({
-				from: data.from ?? `<${env.GOOGLE_APP_EMAIL}>`,
+			await resend.emails.send({
+				from: `Jera <${env.RESEND_EMAIL}>`,
 				to: data.to,
 				subject: data.subject,
 				html: data.html,
@@ -55,6 +56,21 @@ class EmailHelper {
 
 	async sendResetSuccessEmail(email: string) {
 		const { subject, html } = await generateEmailMessage("reset-success");
+		return await this.sendEmail({ to: email, subject, html });
+	}
+
+	async sendInvitationEmail(email: string, token: string) {
+		const { subject, html } = await generateEmailMessage("invitation", token);
+		return await this.sendEmail({ to: email, subject, html });
+	}
+
+	async sendinvitationRegisterEmail(email: string, token: string) {
+		const link = `${env.FRONTEND_BASE_URL}/register?invitationToken=${token}`;
+		const { subject, html } = await generateEmailMessage(
+			"invitation",
+			undefined,
+			link,
+		);
 		return await this.sendEmail({ to: email, subject, html });
 	}
 }

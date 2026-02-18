@@ -25,4 +25,11 @@ export const env = {
 			?.split(",")
 			.map((o) => o.trim())
 			.filter(Boolean) ?? [],
+	RESEND_API_KEY: requiredEnv("RESEND_API_KEY"),
+	RESEND_EMAIL: requiredEnv("RESEND_EMAIL"),
+	R2_ENDPOINT: requiredEnv("R2_ENDPOINT"),
+	R2_ACCESS_KEY_ID: requiredEnv("R2_ACCESS_KEY_ID"),
+	R2_SECRET_ACCESS_KEY: requiredEnv("R2_SECRET_ACCESS_KEY"),
+	R2_BUCKET_NAME: requiredEnv("R2_BUCKET_NAME"),
+	R2_PUBLIC_URL: requiredEnv("R2_PUBLIC_URL"),
 };

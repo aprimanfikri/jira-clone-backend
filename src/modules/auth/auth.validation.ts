@@ -16,6 +16,7 @@ export const authRegisterSchema = z.object({
 	password: requiredString("Password")
 		.min(6, "Password must be at least 6 characters long")
 		.max(32, "Password must be at most 32 characters long"),
+	invitationToken: z.string().optional(),
 });
 
 export const forgotPasswordSchema = authLoginSchema.omit({ password: true });

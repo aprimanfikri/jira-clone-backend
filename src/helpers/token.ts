@@ -47,4 +47,5 @@ class TokenHelper {
 	}
 }
 
-export default TokenHelper.instance;
+const tokenHelper = TokenHelper.instance;
+export default tokenHelper;

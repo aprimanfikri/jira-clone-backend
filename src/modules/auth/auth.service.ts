@@ -1,9 +1,11 @@
 import { HTTPException } from "hono/http-exception";
+import { env } from "@/config/env";
 import type { User } from "@/database/schemas";
 import bcryptHelper from "@/helpers/bcrypt";
 import emailHelper from "@/helpers/email";
 import tokenHelper from "@/helpers/token";
 import authRepository from "@/modules/auth/auth.repository";
+import organizationRepository from "@/modules/organization/organization.repository";
 import type { JwtPayload, PurposeType } from "@/types";
 import { omitPassword, toLowercase } from "@/utils";
 import type {
@@ -16,12 +18,14 @@ import type {
 class AuthService {
 	private static _instance: AuthService;
 	private readonly authRepository: typeof authRepository;
+	private readonly organizationRepository: typeof organizationRepository;
 	private readonly bcryptHelper: typeof bcryptHelper;
 	private readonly emailHelper: typeof emailHelper;
 	private readonly tokenHelper: typeof tokenHelper;
 
 	private constructor() {
 		this.authRepository = authRepository;
+		this.organizationRepository = organizationRepository;
 		this.bcryptHelper = bcryptHelper;
 		this.emailHelper = emailHelper;
 		this.tokenHelper = tokenHelper;
@@ -55,7 +59,31 @@ class AuthService {
 			...body,
 			password: hashedPassword,
 		});
+
+		if (body.invitationToken) {
+			const invitation =
+				await this.organizationRepository.findInvitationByToken(
+					body.invitationToken,
+				);
+			if (
+				invitation &&
+				invitation.email === user.email &&
+				invitation.expiresAt > new Date()
+			) {
+				await this.organizationRepository.addMember({
+					organizationId: invitation.organizationId,
+					userId: user.id,
+					role: invitation.role,
+					status: "ACCEPTED",
+				});
+				await this.organizationRepository.deleteInvitation(invitation.id);
+			}
+		}
+
 		const token = await this.generateVerificationToken(user, "verification");
+		if (env.APP_ENV === "development") {
+			return { token };
+		}
 		this.emailHelper.sendVerificationEmail(user.email, token);
 		return;
 	}
@@ -105,6 +133,9 @@ class AuthService {
 			purpose: "verification",
 		};
 		const token = await this.tokenHelper.generate(payload);
+		if (env.APP_ENV === "development") {
+			return { token };
+		}
 		this.emailHelper.sendVerificationEmail(user.email, token);
 		return;
 	}
@@ -126,25 +157,9 @@ class AuthService {
 			purpose: "reset-password",
 		};
 		const token = await this.tokenHelper.generate(payload);
-		this.emailHelper.sendResetPasswordEmail(user.email, token);
-		return;
-	}
-
-	async resendResetPassword(body: ForgotPasswordSchema) {
-		const email = toLowercase(body.email);
-		const user = await this.authRepository.findByEmail(email);
-		if (!user) return;
-		if (!user.isEmailVerified) {
-			throw new HTTPException(400, {
-				message: "Email is not verified",
-			});
+		if (env.APP_ENV === "development") {
+			return { token };
 		}
-		const payload: JwtPayload = {
-			id: user.id,
-			email: user.email,
-			purpose: "reset-password",
-		};
-		const token = await this.tokenHelper.generate(payload);
 		this.emailHelper.sendResetPasswordEmail(user.email, token);
 		return;
 	}

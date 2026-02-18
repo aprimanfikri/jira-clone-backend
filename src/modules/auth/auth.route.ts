@@ -4,6 +4,7 @@ import authController from "./auth.controller";
 
 const authRoute = new Hono();
 
+authRoute.get("/", authMiddleware.session(), authController.me);
 authRoute.post("/register", authController.register);
 authRoute.post(
 	"/verify",
@@ -12,10 +13,8 @@ authRoute.post(
 );
 authRoute.post("/login", authController.login);
 authRoute.post("/logout", authController.logout);
-authRoute.get("/me", authMiddleware.session(), authController.me);
 authRoute.post("/resend-verification", authController.resendVerification);
 authRoute.post("/forgot-password", authController.forgotPassword);
-authRoute.post("/resend-reset-password", authController.resendResetPassword);
 authRoute.post(
 	"/reset-password",
 	authMiddleware.token("reset-password"),

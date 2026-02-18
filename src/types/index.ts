@@ -1,4 +1,8 @@
-import type { User } from "@/database/schemas";
+import type {
+	Organization,
+	OrganizationMember,
+	User,
+} from "@/database/schemas";
 
 export interface SessionData {
 	user: Omit<User, "password">;
@@ -50,7 +54,7 @@ export const RESPONSE_CODES = {
 
 export type ResponseCode = (typeof RESPONSE_CODES)[keyof typeof RESPONSE_CODES];
 
-export type PurposeType = "verification" | "reset-password";
+export type PurposeType = "verification" | "reset-password" | "invitation";
 
 export interface BaseJWTPayload {
 	iss?: string;
@@ -67,6 +71,19 @@ export interface JwtPayload extends BaseJWTPayload {
 	id: string;
 	email: string;
 	purpose?: PurposeType;
+	organizationId?: string;
 }
 
 export type AppEnv = "development" | "staging" | "production" | "test";
+
+export type OrganizationWithOwner = Organization & {
+	owner: Omit<User, "password">;
+};
+
+export type OrganizationWithMembers = Organization & {
+	user: Omit<User, "password">[];
+};
+
+export type OrganizationMemberWithUser = OrganizationMember & {
+	user: Omit<User, "password">;
+};

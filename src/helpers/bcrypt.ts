@@ -19,4 +19,5 @@ class BcryptHelper {
 	}
 }
 
-export default BcryptHelper.instance;
+const bcryptHelper = BcryptHelper.instance;
+export default bcryptHelper;

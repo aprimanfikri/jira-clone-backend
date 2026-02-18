@@ -27,27 +27,36 @@ export const errorHandler = async (err: unknown, c: Context) => {
 
 	let httpStatus: ContentfulStatusCode = 500;
 	let message = "Internal Server Error";
+	let res: Response | undefined;
 
 	if (err instanceof HTTPException) {
 		httpStatus = err.status;
 		message = err.message;
+		res = err.res;
 	} else if (isHTTPResponseError(err)) {
-		const res = err.res;
+		res = err.res;
 		httpStatus = res.status as ContentfulStatusCode;
-
-		try {
-			const clone = res.clone();
-			const data = (await clone.json()) as { message?: string; error?: string };
-			message = data.message ?? data.error ?? "HTTP Error";
-		} catch {
-			message = res.statusText || "HTTP Error";
-		}
 	} else if (err instanceof ZodError) {
 		const firstIssue = err.issues[0];
 		httpStatus = 400;
 		message = firstIssue.message;
 	} else if (err instanceof Error) {
-		message = err.message || message;
+		message = err.message;
+	}
+
+	if (res) {
+		try {
+			const clone = res.clone();
+			const text = await clone.text();
+			try {
+				const data = JSON.parse(text);
+				message = data.message ?? data.error ?? text;
+			} catch {
+				message = text || res.statusText || "HTTP Error";
+			}
+		} catch {
+			message = res.statusText || "HTTP Error";
+		}
 	}
 
 	const internalCode = mapHttpStatusToInternalCode(httpStatus);

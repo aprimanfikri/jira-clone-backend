@@ -24,7 +24,7 @@ class AuthMiddleware {
 
 	token(requiredPurpose?: PurposeType) {
 		return async (c: Context, next: Next) => {
-			const header = c.req.header("x-service-token");
+			const header = c.req.header("Authorization");
 			if (!header || !header.startsWith("Bearer ")) {
 				throw new HTTPException(401, {
 					message: "Missing or invalid authorization header",

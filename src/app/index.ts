@@ -1,4 +1,6 @@
-import { type Context, Hono } from "hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { Scalar } from "@scalar/hono-api-reference";
+import type { Context } from "hono";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
 import { logger } from "hono/logger";
@@ -10,7 +12,7 @@ import { errorHandler } from "@/middlewares/error.middleware";
 import routes from "@/routes";
 import { RESPONSE_CODES } from "@/types";
 
-const app = new Hono();
+const app = new OpenAPIHono();
 
 app.use(logger());
 
@@ -43,6 +45,22 @@ app.use(
 
 app.use(csrf({ origin: env.CORS_ORIGIN }));
 app.use(secureHeaders());
+
+app.doc("/doc", {
+	openapi: "3.0.0",
+	info: {
+		version: "1.0.0",
+		title: "Jira Clone API",
+	},
+});
+
+app.get(
+	"/reference",
+	Scalar({
+		theme: "kepler",
+		url: "/doc",
+	}),
+);
 
 app.get("/health", (c: Context) =>
 	responseHandler.success(

@@ -13,6 +13,8 @@
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.992.0",
 		"@aws-sdk/s3-request-presigner": "^3.992.0",
+		"@hono/zod-openapi": "^1.2.2",
+		"@scalar/hono-api-reference": "^0.9.44",
 		"dotenv": "^17.3.1",
 		"drizzle-cuid2": "^2.2.0",
 		"drizzle-orm": "^0.45.1",

@@ -11,7 +11,7 @@ import {
 	updateMemberRoleSchema,
 	updateOrganizationSchema,
 } from "@/modules/organization/organization.validation";
-import { type JwtPayload, RESPONSE_CODES } from "@/types";
+import { RESPONSE_CODES, type SessionData } from "@/types";
 
 class OrganizationController {
 	private static _instance: OrganizationController;
@@ -31,10 +31,10 @@ class OrganizationController {
 	}
 
 	create = async (c: Context) => {
-		const auth = c.get("auth") as JwtPayload;
+		const user = c.get("auth") as SessionData["user"];
 		const body = await c.req.json<CreateOrganizationSchema>();
 		const data = createOrganizationSchema.parse(body);
-		const result = await this.organizationService.create(auth.id, data);
+		const result = await this.organizationService.create(user.id, data);
 		return this.responseHandler.success(
 			c,
 			"Organization created successfully",
@@ -45,9 +45,9 @@ class OrganizationController {
 	};
 
 	getAll = async (c: Context) => {
-		const auth = c.get("auth") as JwtPayload;
+		const user = c.get("auth") as SessionData["user"];
 		const result = await this.organizationService.getAllMyOrganizations(
-			auth.id,
+			user.id,
 		);
 		return this.responseHandler.success(
 			c,
@@ -59,9 +59,9 @@ class OrganizationController {
 	};
 
 	getDetail = async (c: Context) => {
-		const auth = c.get("auth") as JwtPayload;
+		const user = c.get("auth") as SessionData["user"];
 		const id = c.req.param("id");
-		const result = await this.organizationService.getDetail(id, auth.id);
+		const result = await this.organizationService.getDetail(id, user.id);
 		return this.responseHandler.success(
 			c,
 			"Organization detail retrieved successfully",
@@ -72,11 +72,11 @@ class OrganizationController {
 	};
 
 	update = async (c: Context) => {
-		const auth = c.get("auth") as JwtPayload;
+		const user = c.get("auth") as SessionData["user"];
 		const id = c.req.param("id");
 		const body = await c.req.json<UpdateOrganizationSchema>();
 		const data = updateOrganizationSchema.parse(body);
-		const result = await this.organizationService.update(id, auth.id, data);
+		const result = await this.organizationService.update(id, user.id, data);
 		return this.responseHandler.success(
 			c,
 			"Organization updated successfully",
@@ -87,9 +87,9 @@ class OrganizationController {
 	};
 
 	delete = async (c: Context) => {
-		const auth = c.get("auth") as JwtPayload;
+		const user = c.get("auth") as SessionData["user"];
 		const id = c.req.param("id");
-		await this.organizationService.delete(id, auth.id);
+		await this.organizationService.delete(id, user.id);
 		return this.responseHandler.success(
 			c,
 			"Organization deleted successfully",
@@ -100,13 +100,13 @@ class OrganizationController {
 	};
 
 	inviteMember = async (c: Context) => {
-		const auth = c.get("auth") as JwtPayload;
+		const user = c.get("auth") as SessionData["user"];
 		const id = c.req.param("id");
 		const body = await c.req.json<InviteMemberSchema>();
 		const data = inviteMemberSchema.parse(body);
 		const result = await this.organizationService.inviteMember(
 			id,
-			auth.id,
+			user.id,
 			data,
 		);
 		return this.responseHandler.success(
@@ -119,9 +119,9 @@ class OrganizationController {
 	};
 
 	acceptInvitation = async (c: Context) => {
-		const auth = c.get("auth") as JwtPayload;
+		const user = c.get("auth") as SessionData["user"];
 		const id = c.req.param("id");
-		await this.organizationService.acceptInvitation(auth, id);
+		await this.organizationService.acceptInvitation(user, id);
 		return this.responseHandler.success(
 			c,
 			"Invitation accepted successfully",
@@ -132,9 +132,9 @@ class OrganizationController {
 	};
 
 	getMembers = async (c: Context) => {
-		const auth = c.get("auth") as JwtPayload;
+		const user = c.get("auth") as SessionData["user"];
 		const id = c.req.param("id");
-		const result = await this.organizationService.getMembers(id, auth.id);
+		const result = await this.organizationService.getMembers(id, user.id);
 		return this.responseHandler.success(
 			c,
 			"Members retrieved successfully",
@@ -145,14 +145,14 @@ class OrganizationController {
 	};
 
 	updateMemberRole = async (c: Context) => {
-		const auth = c.get("auth") as JwtPayload;
+		const user = c.get("auth") as SessionData["user"];
 		const id = c.req.param("id");
 		const memberId = c.req.param("memberId");
 		const body = await c.req.json<UpdateMemberRoleSchema>();
 		const data = updateMemberRoleSchema.parse(body);
 		const result = await this.organizationService.updateMemberRole(
 			id,
-			auth.id,
+			user.id,
 			memberId,
 			data,
 		);
@@ -166,10 +166,10 @@ class OrganizationController {
 	};
 
 	removeMember = async (c: Context) => {
-		const auth = c.get("auth") as JwtPayload;
+		const user = c.get("auth") as SessionData["user"];
 		const id = c.req.param("id");
 		const memberId = c.req.param("memberId");
-		await this.organizationService.removeMember(id, auth.id, memberId);
+		await this.organizationService.removeMember(id, user.id, memberId);
 		return this.responseHandler.success(
 			c,
 			"Member removed successfully",

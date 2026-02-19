@@ -1,4 +1,4 @@
-import z from "zod";
+import { z } from "@hono/zod-openapi";
 
 export const requiredEnv = (name: string): string => {
 	const value = Bun.env[name];

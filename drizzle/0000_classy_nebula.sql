@@ -35,14 +35,12 @@ CREATE TABLE "users" (
 	"id" varchar(24) PRIMARY KEY NOT NULL,
 	"name" varchar(100) NOT NULL,
 	"email" varchar(100) NOT NULL,
-	"password" varchar(255),
-	"google_id" varchar(255),
+	"password" varchar(255) NOT NULL,
 	"image" text,
 	"is_email_verified" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "users_email_unique" UNIQUE("email"),
-	CONSTRAINT "users_google_id_unique" UNIQUE("google_id")
+	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
 ALTER TABLE "issues" ADD CONSTRAINT "issues_project_id_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

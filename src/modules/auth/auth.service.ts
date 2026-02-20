@@ -14,14 +14,6 @@ import type {
 import type { JwtPayload, PurposeType } from "@/types";
 import { omitPassword, toLowercase } from "@/utils";
 
-interface GoogleUserInfo {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-  verified_email: boolean;
-}
-
 class AuthService {
   private static _instance: AuthService;
   private readonly authRepository: typeof authRepository;
@@ -98,7 +90,8 @@ class AuthService {
     }
     if (!user.password) {
       throw new HTTPException(401, {
-        message: "This account uses Google login. Please sign in with Google.",
+        message:
+          "This account was created via Google and has no password. Please use 'Forgot Password' to set one.",
       });
     }
     const isPasswordValid = await this.bcryptHelper.compare(
@@ -108,79 +101,6 @@ class AuthService {
     if (!isPasswordValid) {
       throw new HTTPException(401, { message: "Invalid credentials" });
     }
-    return omitPassword(user);
-  }
-
-  async googleOAuth(code: string): Promise<Omit<User, "password">> {
-    const redirectUri = `http://localhost:${env.PORT}/auth/google/callback`;
-
-    // Exchange code for tokens
-    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        code,
-        client_id: env.GOOGLE_CLIENT_ID,
-        client_secret: env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: redirectUri,
-        grant_type: "authorization_code",
-      }),
-    });
-
-    if (!tokenRes.ok) {
-      const err = await tokenRes.text();
-      console.error("Google token exchange error:", err);
-      throw new HTTPException(400, {
-        message: "Failed to exchange Google authorization code",
-      });
-    }
-
-    const tokenData = (await tokenRes.json()) as { access_token: string };
-
-    // Fetch user info from Google
-    const userInfoRes = await fetch(
-      "https://www.googleapis.com/oauth2/v2/userinfo",
-      {
-        headers: { Authorization: `Bearer ${tokenData.access_token}` },
-      },
-    );
-
-    if (!userInfoRes.ok) {
-      throw new HTTPException(400, {
-        message: "Failed to fetch Google user info",
-      });
-    }
-
-    const googleUser = (await userInfoRes.json()) as GoogleUserInfo;
-
-    // 1. Try to find by googleId
-    let user = await this.authRepository.findByGoogleId(googleUser.id);
-    if (user) {
-      return omitPassword(user);
-    }
-
-    // 2. Try to find by email — link the account
-    const existingByEmail = await this.authRepository.findByEmail(
-      googleUser.email,
-    );
-    if (existingByEmail) {
-      user = await this.authRepository.update(existingByEmail.id, {
-        googleId: googleUser.id,
-        image: existingByEmail.image ?? googleUser.picture,
-        isEmailVerified: true,
-      });
-      return omitPassword(user);
-    }
-
-    // 3. Create new user
-    user = await this.authRepository.create({
-      name: googleUser.name,
-      email: googleUser.email,
-      googleId: googleUser.id,
-      image: googleUser.picture,
-      isEmailVerified: true,
-    });
-
     return omitPassword(user);
   }
 

@@ -17,6 +17,8 @@ export const env = {
 	JWT_SECRET: requiredEnv("JWT_SECRET"),
 	GOOGLE_APP_EMAIL: requiredEnv("GOOGLE_APP_EMAIL"),
 	GOOGLE_APP_PASSWORD: requiredEnv("GOOGLE_APP_PASSWORD"),
+	GOOGLE_CLIENT_ID: requiredEnv("GOOGLE_CLIENT_ID"),
+	GOOGLE_CLIENT_SECRET: requiredEnv("GOOGLE_CLIENT_SECRET"),
 	PORT: Number(Bun.env.PORT ?? 4001),
 	APP_ENV: rawAppEnv as AppEnv,
 	FRONTEND_BASE_URL: requiredEnv("FRONTEND_BASE_URL"),

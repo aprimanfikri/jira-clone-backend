@@ -36,6 +36,13 @@ class AuthRepository {
 		return user ?? null;
 	}
 
+	async findByGoogleId(googleId: string): Promise<User | null> {
+		const user = await this.db.query.users.findFirst({
+			where: (users, { eq }) => eq(users.googleId, googleId),
+		});
+		return user ?? null;
+	}
+
 	async create(data: UserCreateInput): Promise<User> {
 		const [user] = await this.db.insert(users).values(data).returning();
 		return user;

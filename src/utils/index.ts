@@ -13,7 +13,7 @@ export const requiredString = (fieldName: string): z.ZodString => {
 	return z.string({ message: `${fieldName} is required` });
 };
 
-export const omitPassword = <T extends { password?: string }>(
+export const omitPassword = <T extends { password?: string | null }>(
 	user: T,
 ): Omit<T, "password"> => {
 	const { password, ...safe } = user;

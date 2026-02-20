@@ -13,8 +13,6 @@ const authRoute = new OpenAPIHono();
 
 const tags = ["Auth"];
 
-// --- Routes ---
-
 const meRoute = createRoute({
 	method: "get",
 	path: "/",
@@ -27,8 +25,6 @@ const meRoute = createRoute({
 
 authRoute.use("/", authMiddleware.session());
 authRoute.openapi(meRoute, authController.me);
-
-// ---
 
 const registerRoute = createRoute({
 	method: "post",
@@ -46,8 +42,6 @@ const registerRoute = createRoute({
 
 authRoute.openapi(registerRoute, authController.register);
 
-// ---
-
 const verifyRoute = createRoute({
 	method: "post",
 	path: "/verify",
@@ -60,8 +54,6 @@ const verifyRoute = createRoute({
 
 authRoute.use("/verify", authMiddleware.token("verification"));
 authRoute.openapi(verifyRoute, authController.verify);
-
-// ---
 
 const loginRoute = createRoute({
 	method: "post",
@@ -79,8 +71,6 @@ const loginRoute = createRoute({
 
 authRoute.openapi(loginRoute, authController.login);
 
-// ---
-
 const logoutRoute = createRoute({
 	method: "post",
 	path: "/logout",
@@ -91,8 +81,6 @@ const logoutRoute = createRoute({
 });
 
 authRoute.openapi(logoutRoute, authController.logout);
-
-// ---
 
 const resendVerificationRoute = createRoute({
 	method: "post",
@@ -110,8 +98,6 @@ const resendVerificationRoute = createRoute({
 
 authRoute.openapi(resendVerificationRoute, authController.resendVerification);
 
-// ---
-
 const forgotPasswordRoute = createRoute({
 	method: "post",
 	path: "/forgot-password",
@@ -127,8 +113,6 @@ const forgotPasswordRoute = createRoute({
 });
 
 authRoute.openapi(forgotPasswordRoute, authController.forgotPassword);
-
-// ---
 
 const resetPasswordRoute = createRoute({
 	method: "post",
@@ -147,5 +131,27 @@ const resetPasswordRoute = createRoute({
 
 authRoute.use("/reset-password", authMiddleware.token("reset-password"));
 authRoute.openapi(resetPasswordRoute, authController.resetPassword);
+
+const googleRoute = createRoute({
+	method: "get",
+	path: "/google",
+	tags,
+	responses: {
+		302: { description: "Redirect to Google OAuth consent screen" },
+	},
+});
+
+authRoute.openapi(googleRoute, authController.googleRedirect);
+
+const googleCallbackRoute = createRoute({
+	method: "get",
+	path: "/google/callback",
+	tags,
+	responses: {
+		302: { description: "Redirect after Google OAuth callback" },
+	},
+});
+
+authRoute.openapi(googleCallbackRoute, authController.googleCallback);
 
 export default authRoute;

@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 import type { Session } from "hono-sessions";
+import { env } from "@/config/env";
 import responseHandler from "@/helpers/response";
 import authService from "@/modules/auth/auth.service";
 import {
@@ -143,6 +144,39 @@ class AuthController {
 			RESPONSE_CODES.SUCCESS,
 			200,
 		);
+	};
+
+	googleRedirect = (c: Context) => {
+		const redirectUri = `http://localhost:${env.PORT}/auth/google/callback`;
+		const scope = "openid email profile";
+		const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+		url.searchParams.set("client_id", env.GOOGLE_CLIENT_ID);
+		url.searchParams.set("redirect_uri", redirectUri);
+		url.searchParams.set("response_type", "code");
+		url.searchParams.set("scope", scope);
+		url.searchParams.set("access_type", "offline");
+		url.searchParams.set("prompt", "select_account");
+		return c.redirect(url.toString());
+	};
+
+	googleCallback = async (c: Context) => {
+		const code = c.req.query("code");
+		const error = c.req.query("error");
+		const frontendBase = env.FRONTEND_BASE_URL.replace(/\/$/, "");
+
+		if (error || !code) {
+			return c.redirect(`${frontendBase}/login?error=oauth_cancelled`);
+		}
+
+		try {
+			const result = await this.authService.googleOAuth(code);
+			const session = c.get("session") as Session<SessionData>;
+			session.set("user", result);
+			return c.redirect(frontendBase);
+		} catch (err) {
+			console.error("Google OAuth callback error:", err);
+			return c.redirect(`${frontendBase}/login?error=oauth_failed`);
+		}
 	};
 }
 

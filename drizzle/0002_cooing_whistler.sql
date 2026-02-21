@@ -1,1 +1,0 @@
-ALTER TYPE "public"."issue_type" ADD VALUE 'SUBTASK';

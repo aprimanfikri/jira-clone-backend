@@ -15,6 +15,13 @@
       "when": 1771703197569,
       "tag": "0001_steep_mach_iv",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771706121922,
+      "tag": "0002_oval_terror",
+      "breakpoints": true
     }
   ]
 }

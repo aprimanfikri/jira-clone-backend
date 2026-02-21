@@ -118,16 +118,40 @@ class IssueService {
     const issue = await this.issueRepository.findById(id);
     if (!issue) throw new HTTPException(404, { message: "Item not found" });
 
+    const targetStatus = data.status ?? issue.status;
+    const targetType = data.type ?? issue.type;
+
     // Prevent marking parent as DONE if sub-tasks are not DONE
-    if (data.status === "DONE" && issue.type !== "SUBTASK") {
-      const hasActiveSubtasks = issue.children?.some(
-        (child) => child.status !== "DONE",
-      );
-      if (hasActiveSubtasks) {
-        throw new HTTPException(400, {
-          message:
-            "Cannot complete issue while sub-tasks are still in progress",
-        });
+    if (targetStatus === "DONE") {
+      if (targetType !== "SUBTASK") {
+        const hasActiveSubtasks = issue.children?.some(
+          (child) => child.status !== "DONE",
+        );
+        if (hasActiveSubtasks) {
+          throw new HTTPException(400, {
+            message:
+              "Cannot complete issue while sub-tasks are still in progress",
+          });
+        }
+      }
+
+      // Bug-specific validation: RCA and Solution must be filled
+      if (targetType === "BUG") {
+        const rca = data.rca ?? issue.rca;
+        const solution = data.solution ?? issue.solution;
+
+        const isEmpty = (val: string | null | undefined) => {
+          if (!val) return true;
+          const trimmed = val.replace(/<[^>]*>/g, "").trim();
+          return trimmed === "";
+        };
+
+        if (isEmpty(rca) || isEmpty(solution)) {
+          throw new HTTPException(400, {
+            message:
+              "BUG type issues must have RCA and Solution filled before transitioning to DONE",
+          });
+        }
       }
     }
 

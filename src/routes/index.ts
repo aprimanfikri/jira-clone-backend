@@ -16,9 +16,9 @@ routes.route("/storage", storageRoute);
 routes.route("/profile", profileRoute);
 routes.route("/users", userRoutes);
 routes.get(
-  "/browse/:key",
-  authMiddleware.session(),
-  issueController.getDetailByKey,
+	"/browse/:key",
+	authMiddleware.session(),
+	issueController.getDetailByKey,
 );
 
 // Project routes: /projects

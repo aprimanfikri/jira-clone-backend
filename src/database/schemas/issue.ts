@@ -50,6 +50,12 @@ export const issues = pgTable("issues", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   key: varchar("key", { length: 20 }).notNull().unique(),
+  parentId: cuid("parent_id").references((): any => issues.id, {
+    onDelete: "cascade",
+  }),
+  epicId: cuid("epic_id").references((): any => issues.id, {
+    onDelete: "set null",
+  }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

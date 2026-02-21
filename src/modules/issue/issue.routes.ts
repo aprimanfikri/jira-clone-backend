@@ -12,6 +12,9 @@ issueRoutes.get("/", issueController.getAll);
 // POST /projects/:projectId/issues
 issueRoutes.post("/", issueController.create);
 
+// POST /projects/:projectId/issues/reorder
+issueRoutes.post("/reorder", issueController.reorder);
+
 // GET /projects/:projectId/issues/:issueId
 issueRoutes.get("/:issueId", issueController.getDetail);
 

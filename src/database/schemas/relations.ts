@@ -1,6 +1,5 @@
 import { relations } from "drizzle-orm";
 import { issues } from "./issue";
-import { subtasks } from "./subtask";
 import { projects } from "./project";
 import { users } from "./user";
 
@@ -19,22 +18,18 @@ export const issuesRelations = relations(issues, ({ one, many }) => ({
     references: [users.id],
     relationName: "reporter",
   }),
-  subtasks: many(subtasks),
-}));
-
-export const subtasksRelations = relations(subtasks, ({ one }) => ({
-  issue: one(issues, {
-    fields: [subtasks.issueId],
+  parent: one(issues, {
+    fields: [issues.parentId],
     references: [issues.id],
+    relationName: "parent",
   }),
-  assignee: one(users, {
-    fields: [subtasks.assigneeId],
-    references: [users.id],
+  children: many(issues, { relationName: "parent" }),
+  epic: one(issues, {
+    fields: [issues.epicId],
+    references: [issues.id],
+    relationName: "epic",
   }),
-  reporter: one(users, {
-    fields: [subtasks.reporterId],
-    references: [users.id],
-  }),
+  epicIssues: many(issues, { relationName: "epic" }),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -48,5 +43,4 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
 export const usersRelations = relations(users, ({ many }) => ({
   assignedIssues: many(issues, { relationName: "assignee" }),
   reportedIssues: many(issues, { relationName: "reporter" }),
-  assignedSubtasks: many(subtasks),
 }));

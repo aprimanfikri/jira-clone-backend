@@ -44,55 +44,24 @@ class IssueService {
       await this.projectRepository.incrementIssueCount(projectId);
     const key = `${project.key}-${newCount}`;
 
-    const maxOrder = await this.issueRepository.getMaxOrder(projectId, "TODO");
+    const maxOrder = await this.issueRepository.getMaxOrder(projectId);
     return await this.issueRepository.create({
       ...data,
       projectId,
       reporterId: userId,
       key,
-      status: "TODO",
+      status: data.status || "TODO",
       order: maxOrder + 1,
     });
   }
 
   async getAll(projectId: string): Promise<any[]> {
     await this.getProjectAndCheckAccess(projectId);
-    const issues = await this.issueRepository.findByProjectId(projectId);
-
-    // Fetch subtasks for this project
-    const subtaskRepo = (await import("@/modules/subtask/subtask.repository"))
-      .default;
-    const subtasks = await subtaskRepo.findByProjectId(projectId);
-
-    // Add type field to subtasks for frontend consistency
-    const subtasksWithType = subtasks.map((s) => ({
-      ...s,
-      type: "SUBTASK",
-    }));
-
-    // Merge and return
-    return [...issues, ...subtasksWithType];
+    return await this.issueRepository.findByProjectId(projectId);
   }
 
   async getUserIssues(userId: string): Promise<any[]> {
-    const issues = await this.issueRepository.findByUserId(userId);
-
-    const subtaskRepo = (await import("@/modules/subtask/subtask.repository"))
-      .default;
-    const subtasks = await subtaskRepo.findByUserId(userId);
-
-    const subtasksWithType = subtasks.map((s) => ({
-      ...s,
-      type: "SUBTASK",
-    }));
-
-    const result = [...issues, ...subtasksWithType];
-
-    // Sort by createdAt descending
-    return result.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+    return await this.issueRepository.findByUserId(userId);
   }
 
   async getDetail(issueId: string): Promise<IssueWithUsers> {
@@ -105,52 +74,39 @@ class IssueService {
     const issue = await this.issueRepository.findByKey(key);
     if (issue) return issue;
 
-    const subtask = await (
-      await import("@/modules/subtask/subtask.repository")
-    ).default.findByKey(key);
-    if (subtask) return subtask;
-
     throw new HTTPException(404, { message: "Item not found" });
   }
 
   async update(id: string, data: UpdateIssueSchema): Promise<any> {
     const issue = await this.issueRepository.findById(id);
-    if (issue) return await this.issueRepository.update(id, data);
+    if (!issue) throw new HTTPException(404, { message: "Item not found" });
 
-    const subtaskRepo = (await import("@/modules/subtask/subtask.repository"))
-      .default;
-    const subtask = await subtaskRepo.findById(id);
-    if (subtask) return await subtaskRepo.update(id, data);
+    // Handle epicId and parentId correctly from validation
+    const updateData = {
+      ...data,
+      assigneeId: data.assigneeId === "none" ? null : data.assigneeId,
+      parentId: data.parentId === "none" ? null : data.parentId,
+      epicId: data.epicId === "none" ? null : data.epicId,
+    };
 
-    throw new HTTPException(404, { message: "Item not found" });
+    return await this.issueRepository.update(id, updateData);
+  }
+
+  async reorder(projectId: string, issueIds: string[]): Promise<void> {
+    await this.getProjectAndCheckAccess(projectId);
+    await this.issueRepository.batchUpdateOrder(issueIds);
   }
 
   async delete(userId: string, id: string): Promise<void> {
     const issue = await this.issueRepository.findById(id);
-    if (issue) {
-      if (issue.reporterId !== userId) {
-        throw new HTTPException(403, {
-          message: "Forbidden - only reporter can delete",
-        });
-      }
-      await this.issueRepository.delete(id);
-      return;
-    }
+    if (!issue) throw new HTTPException(404, { message: "Item not found" });
 
-    const subtaskRepo = (await import("@/modules/subtask/subtask.repository"))
-      .default;
-    const subtask = await subtaskRepo.findById(id);
-    if (subtask) {
-      if (subtask.reporterId !== userId) {
-        throw new HTTPException(403, {
-          message: "Forbidden - only reporter can delete",
-        });
-      }
-      await subtaskRepo.delete(id);
-      return;
+    if (issue.reporterId !== userId) {
+      throw new HTTPException(403, {
+        message: "Forbidden - only reporter can delete",
+      });
     }
-
-    throw new HTTPException(404, { message: "Item not found" });
+    await this.issueRepository.delete(id);
   }
 }
 

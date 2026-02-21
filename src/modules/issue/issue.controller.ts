@@ -6,6 +6,8 @@ import {
   createIssueSchema,
   type UpdateIssueSchema,
   updateIssueSchema,
+  type BatchReorderSchema,
+  batchReorderSchema,
 } from "@/modules/issue/issue.validation";
 import { RESPONSE_CODES, type SessionData } from "@/types";
 
@@ -94,6 +96,19 @@ class IssueController {
       c,
       "Issue updated successfully",
       result,
+      RESPONSE_CODES.SUCCESS,
+    );
+  };
+
+  reorder = async (c: Context) => {
+    const projectId = c.req.param("projectId");
+    const body = await c.req.json<BatchReorderSchema>();
+    const { issueIds } = batchReorderSchema.parse(body);
+    await this.issueService.reorder(projectId, issueIds);
+    return this.responseHandler.success(
+      c,
+      "Issues reordered successfully",
+      undefined,
       RESPONSE_CODES.SUCCESS,
     );
   };

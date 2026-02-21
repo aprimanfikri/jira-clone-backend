@@ -15,6 +15,10 @@ export type IssueWithUsers = Issue & {
     image: string | null;
   } | null;
   reporter: { id: string; name: string; email: string; image: string | null };
+  project?: { id: string; name: string; key: string };
+  children?: IssueWithUsers[];
+  parent?: { id: string; title: string; key: string; type: string } | null;
+  epic?: { id: string; title: string; key: string; type: string } | null;
 };
 
 class IssueRepository {
@@ -50,7 +54,13 @@ class IssueRepository {
         project: {
           columns: { id: true, name: true, key: true },
         },
-        subtasks: {
+        parent: {
+          columns: { id: true, title: true, key: true, type: true },
+        },
+        epic: {
+          columns: { id: true, title: true, key: true, type: true },
+        },
+        children: {
           with: {
             assignee: {
               columns: { id: true, name: true, email: true, image: true },
@@ -59,7 +69,7 @@ class IssueRepository {
         },
       },
     });
-    return issue ?? null;
+    return (issue as IssueWithUsers) ?? null;
   }
 
   async findByKey(key: string): Promise<IssueWithUsers | null> {
@@ -75,7 +85,13 @@ class IssueRepository {
         project: {
           columns: { id: true, name: true, key: true },
         },
-        subtasks: {
+        parent: {
+          columns: { id: true, title: true, key: true, type: true },
+        },
+        epic: {
+          columns: { id: true, title: true, key: true, type: true },
+        },
+        children: {
           with: {
             assignee: {
               columns: { id: true, name: true, email: true, image: true },
@@ -84,11 +100,11 @@ class IssueRepository {
         },
       },
     });
-    return issue ?? null;
+    return (issue as IssueWithUsers) ?? null;
   }
 
   async findByProjectId(projectId: string): Promise<IssueWithUsers[]> {
-    return await this.database.query.issues.findMany({
+    const results = await this.database.query.issues.findMany({
       where: (issues, { eq }) => eq(issues.projectId, projectId),
       with: {
         assignee: {
@@ -97,9 +113,19 @@ class IssueRepository {
         reporter: {
           columns: { id: true, name: true, email: true, image: true },
         },
+        project: {
+          columns: { id: true, name: true, key: true },
+        },
+        parent: {
+          columns: { id: true, title: true, key: true, type: true },
+        },
+        epic: {
+          columns: { id: true, title: true, key: true, type: true },
+        },
       },
       orderBy: (issues, { asc }) => [asc(issues.order)],
     });
+    return results as IssueWithUsers[];
   }
 
   async findByUserId(userId: string): Promise<IssueWithUsers[]> {
@@ -117,21 +143,28 @@ class IssueRepository {
           columns: { id: true, name: true, key: true },
         },
       },
-      orderBy: (issues, { desc }) => [desc(issues.createdAt)],
+      orderBy: (issues, { asc }) => [asc(issues.order)],
     });
   }
 
-  async getMaxOrder(
-    projectId: string,
-    status: Issue["status"],
-  ): Promise<number> {
+  async getMaxOrder(projectId: string): Promise<number> {
     const result = await this.database.query.issues.findMany({
-      where: (issues, { and, eq }) =>
-        and(eq(issues.projectId, projectId), eq(issues.status, status)),
+      where: (issues, { eq }) => eq(issues.projectId, projectId),
       orderBy: (issues, { desc }) => [desc(issues.order)],
       limit: 1,
     });
     return result.length > 0 ? result[0].order : -1;
+  }
+
+  async batchUpdateOrder(issueIds: string[]): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      for (let i = 0; i < issueIds.length; i++) {
+        await tx
+          .update(issues)
+          .set({ order: i, updatedAt: new Date() })
+          .where(eq(issues.id, issueIds[i]));
+      }
+    });
   }
 
   async update(id: string, data: IssueUpdateInput): Promise<Issue> {

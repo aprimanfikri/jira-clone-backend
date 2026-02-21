@@ -3,96 +3,92 @@ import type { Issue } from "@/database/schemas";
 import type { IssueWithUsers } from "@/modules/issue/issue.repository";
 import issueRepository from "@/modules/issue/issue.repository";
 import type {
-  CreateIssueSchema,
-  UpdateIssueSchema,
+	CreateIssueSchema,
+	UpdateIssueSchema,
 } from "@/modules/issue/issue.validation";
 import projectRepository from "@/modules/project/project.repository";
 
 class IssueService {
-  private static _instance: IssueService;
-  private readonly issueRepository: typeof issueRepository;
-  private readonly projectRepository: typeof projectRepository;
+	private static _instance: IssueService;
+	private readonly issueRepository: typeof issueRepository;
+	private readonly projectRepository: typeof projectRepository;
 
-  private constructor() {
-    this.issueRepository = issueRepository;
-    this.projectRepository = projectRepository;
-  }
+	private constructor() {
+		this.issueRepository = issueRepository;
+		this.projectRepository = projectRepository;
+	}
 
-  static get instance() {
-    if (!IssueService._instance) {
-      IssueService._instance = new IssueService();
-    }
-    return IssueService._instance;
-  }
+	static get instance() {
+		if (!IssueService._instance) {
+			IssueService._instance = new IssueService();
+		}
+		return IssueService._instance;
+	}
 
-  private async getProjectAndCheckAccess(projectId: string, userId: string) {
-    const project = await this.projectRepository.findById(projectId);
-    if (!project)
-      throw new HTTPException(404, { message: "Project not found" });
-    return { project };
-  }
+	private async getProjectAndCheckAccess(projectId: string) {
+		const project = await this.projectRepository.findById(projectId);
+		if (!project)
+			throw new HTTPException(404, { message: "Project not found" });
+		return { project };
+	}
 
-  async create(
-    userId: string,
-    projectId: string,
-    data: CreateIssueSchema,
-  ): Promise<Issue> {
-    const { project } = await this.getProjectAndCheckAccess(projectId, userId);
+	async create(
+		userId: string,
+		projectId: string,
+		data: CreateIssueSchema,
+	): Promise<Issue> {
+		const { project } = await this.getProjectAndCheckAccess(projectId);
 
-    // Increment project issue count and get new number
-    const newCount =
-      await this.projectRepository.incrementIssueCount(projectId);
-    const key = `${project.key}-${newCount}`;
+		// Increment project issue count and get new number
+		const newCount =
+			await this.projectRepository.incrementIssueCount(projectId);
+		const key = `${project.key}-${newCount}`;
 
-    const maxOrder = await this.issueRepository.getMaxOrder(projectId, "TODO");
-    return await this.issueRepository.create({
-      ...data,
-      projectId,
-      reporterId: userId,
-      key,
-      status: "TODO",
-      order: maxOrder + 1,
-    });
-  }
+		const maxOrder = await this.issueRepository.getMaxOrder(projectId, "TODO");
+		return await this.issueRepository.create({
+			...data,
+			projectId,
+			reporterId: userId,
+			key,
+			status: "TODO",
+			order: maxOrder + 1,
+		});
+	}
 
-  async getAll(userId: string, projectId: string): Promise<IssueWithUsers[]> {
-    await this.getProjectAndCheckAccess(projectId, userId);
-    return await this.issueRepository.findByProjectId(projectId);
-  }
+	async getAll(projectId: string): Promise<IssueWithUsers[]> {
+		await this.getProjectAndCheckAccess(projectId);
+		return await this.issueRepository.findByProjectId(projectId);
+	}
 
-  async getDetail(userId: string, issueId: string): Promise<IssueWithUsers> {
-    const issue = await this.issueRepository.findById(issueId);
-    if (!issue) throw new HTTPException(404, { message: "Issue not found" });
-    return issue;
-  }
+	async getDetail(issueId: string): Promise<IssueWithUsers> {
+		const issue = await this.issueRepository.findById(issueId);
+		if (!issue) throw new HTTPException(404, { message: "Issue not found" });
+		return issue;
+	}
 
-  async getByKey(userId: string, key: string): Promise<IssueWithUsers> {
-    const issue = await this.issueRepository.findByKey(key);
-    if (!issue) throw new HTTPException(404, { message: "Issue not found" });
-    return issue;
-  }
+	async getByKey(key: string): Promise<IssueWithUsers> {
+		const issue = await this.issueRepository.findByKey(key);
+		if (!issue) throw new HTTPException(404, { message: "Issue not found" });
+		return issue;
+	}
 
-  async update(
-    userId: string,
-    issueId: string,
-    data: UpdateIssueSchema,
-  ): Promise<Issue> {
-    const issue = await this.issueRepository.findById(issueId);
-    if (!issue) throw new HTTPException(404, { message: "Issue not found" });
-    return await this.issueRepository.update(issueId, data);
-  }
+	async update(issueId: string, data: UpdateIssueSchema): Promise<Issue> {
+		const issue = await this.issueRepository.findById(issueId);
+		if (!issue) throw new HTTPException(404, { message: "Issue not found" });
+		return await this.issueRepository.update(issueId, data);
+	}
 
-  async delete(userId: string, issueId: string): Promise<void> {
-    const issue = await this.issueRepository.findById(issueId);
-    if (!issue) throw new HTTPException(404, { message: "Issue not found" });
+	async delete(userId: string, issueId: string): Promise<void> {
+		const issue = await this.issueRepository.findById(issueId);
+		if (!issue) throw new HTTPException(404, { message: "Issue not found" });
 
-    if (issue.reporterId !== userId) {
-      throw new HTTPException(403, {
-        message: "Forbidden - only reporter can delete",
-      });
-    }
-    await this.issueRepository.delete(issueId);
-  }
+		if (issue.reporterId !== userId) {
+			throw new HTTPException(403, {
+				message: "Forbidden - only reporter can delete",
+			});
+		}
+		await this.issueRepository.delete(issueId);
+	}
 }
 
 const issueService = IssueService.instance;

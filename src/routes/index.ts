@@ -16,9 +16,9 @@ routes.route("/storage", storageRoute);
 routes.route("/profile", profileRoute);
 routes.route("/users", userRoutes);
 routes.get(
-	"/browse/:key",
-	authMiddleware.session(),
-	issueController.getDetailByKey,
+  "/browse/:key",
+  authMiddleware.session(),
+  issueController.getDetailByKey,
 );
 
 // Project routes: /projects
@@ -32,6 +32,7 @@ routes.route("/projects", projectIssuesRouter);
 // Standalone issue routes: GET/PATCH/DELETE /issues/:issueId
 const standaloneIssueRouter = new Hono();
 standaloneIssueRouter.use("*", authMiddleware.session());
+standaloneIssueRouter.get("/", issueController.getUserIssues);
 standaloneIssueRouter.get("/:issueId", issueController.getDetail);
 standaloneIssueRouter.patch("/:issueId", issueController.update);
 standaloneIssueRouter.delete("/:issueId", issueController.delete);

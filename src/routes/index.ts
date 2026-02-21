@@ -8,6 +8,7 @@ import profileRoute from "@/modules/profile/profile.route";
 import projectRoutes from "@/modules/project/project.routes";
 import storageRoute from "@/modules/storage/storage.route";
 import userRoutes from "@/modules/user/user.routes";
+import commentRoutes from "@/modules/comment/comment.routes";
 
 const routes = new OpenAPIHono();
 
@@ -15,10 +16,11 @@ routes.route("/auth", authRoute);
 routes.route("/storage", storageRoute);
 routes.route("/profile", profileRoute);
 routes.route("/users", userRoutes);
+routes.route("/", commentRoutes);
 routes.get(
-	"/browse/:key",
-	authMiddleware.session(),
-	issueController.getDetailByKey,
+  "/browse/:key",
+  authMiddleware.session(),
+  issueController.getDetailByKey,
 );
 
 // Project routes: /projects

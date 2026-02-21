@@ -3,111 +3,161 @@ import type { Issue } from "@/database/schemas";
 import type { IssueWithUsers } from "@/modules/issue/issue.repository";
 import issueRepository from "@/modules/issue/issue.repository";
 import type {
-	CreateIssueSchema,
-	UpdateIssueSchema,
+  CreateIssueSchema,
+  UpdateIssueSchema,
 } from "@/modules/issue/issue.validation";
 import projectRepository from "@/modules/project/project.repository";
+import type { CommentWithAuthor } from "@/modules/comment/comment.repository";
 
 class IssueService {
-	private static _instance: IssueService;
-	private readonly issueRepository: typeof issueRepository;
-	private readonly projectRepository: typeof projectRepository;
+  private static _instance: IssueService;
+  private readonly issueRepository: typeof issueRepository;
+  private readonly projectRepository: typeof projectRepository;
 
-	private constructor() {
-		this.issueRepository = issueRepository;
-		this.projectRepository = projectRepository;
-	}
+  private constructor() {
+    this.issueRepository = issueRepository;
+    this.projectRepository = projectRepository;
+  }
 
-	static get instance() {
-		if (!IssueService._instance) {
-			IssueService._instance = new IssueService();
-		}
-		return IssueService._instance;
-	}
+  static get instance() {
+    if (!IssueService._instance) {
+      IssueService._instance = new IssueService();
+    }
+    return IssueService._instance;
+  }
 
-	private async getProjectAndCheckAccess(projectId: string) {
-		const project = await this.projectRepository.findById(projectId);
-		if (!project)
-			throw new HTTPException(404, { message: "Project not found" });
-		return { project };
-	}
+  private nestComments(allComments: CommentWithAuthor[]): CommentWithAuthor[] {
+    const commentMap = new Map<string, CommentWithAuthor>();
+    const rootComments: CommentWithAuthor[] = [];
 
-	async create(
-		userId: string,
-		projectId: string,
-		data: CreateIssueSchema,
-	): Promise<Issue> {
-		const { project } = await this.getProjectAndCheckAccess(projectId);
+    // First pass: Create the map
+    allComments.forEach((comment) => {
+      commentMap.set(comment.id, {
+        ...comment,
+        replies: [],
+      });
+    });
 
-		// Increment project issue count and get new number
-		const newCount =
-			await this.projectRepository.incrementIssueCount(projectId);
-		const key = `${project.key}-${newCount}`;
+    // Second pass: Build the tree
+    allComments.forEach((comment) => {
+      const commentWithAuthor = commentMap.get(comment.id)!;
+      if (comment.parentId && commentMap.has(comment.parentId)) {
+        const parent = commentMap.get(comment.parentId)!;
+        parent.replies = parent.replies || [];
+        parent.replies.push(commentWithAuthor);
+      } else {
+        rootComments.push(commentWithAuthor);
+      }
+    });
 
-		const maxOrder = await this.issueRepository.getMaxOrder(projectId);
-		return await this.issueRepository.create({
-			...data,
-			projectId,
-			reporterId: userId,
-			key,
-			status: data.status || "TODO",
-			order: maxOrder + 1,
-		});
-	}
+    return rootComments;
+  }
 
-	async getAll(projectId: string): Promise<IssueWithUsers[]> {
-		await this.getProjectAndCheckAccess(projectId);
-		return await this.issueRepository.findByProjectId(projectId);
-	}
+  private async getProjectAndCheckAccess(projectId: string) {
+    const project = await this.projectRepository.findById(projectId);
+    if (!project)
+      throw new HTTPException(404, { message: "Project not found" });
+    return { project };
+  }
 
-	async getUserIssues(userId: string): Promise<IssueWithUsers[]> {
-		return await this.issueRepository.findByUserId(userId);
-	}
+  async create(
+    userId: string,
+    projectId: string,
+    data: CreateIssueSchema,
+  ): Promise<Issue> {
+    const { project } = await this.getProjectAndCheckAccess(projectId);
 
-	async getDetail(issueId: string): Promise<IssueWithUsers> {
-		const issue = await this.issueRepository.findById(issueId);
-		if (!issue) throw new HTTPException(404, { message: "Issue not found" });
-		return issue;
-	}
+    // Increment project issue count and get new number
+    const newCount =
+      await this.projectRepository.incrementIssueCount(projectId);
+    const key = `${project.key}-${newCount}`;
 
-	async getByKey(key: string): Promise<IssueWithUsers> {
-		const issue = await this.issueRepository.findByKey(key);
-		if (issue) return issue;
+    const maxOrder = await this.issueRepository.getMaxOrder(projectId);
+    return await this.issueRepository.create({
+      ...data,
+      projectId,
+      reporterId: userId,
+      key,
+      status: data.status || "TODO",
+      order: maxOrder + 1,
+    });
+  }
 
-		throw new HTTPException(404, { message: "Item not found" });
-	}
+  async getAll(projectId: string): Promise<IssueWithUsers[]> {
+    await this.getProjectAndCheckAccess(projectId);
+    return await this.issueRepository.findByProjectId(projectId);
+  }
 
-	async update(id: string, data: UpdateIssueSchema): Promise<Issue> {
-		const issue = await this.issueRepository.findById(id);
-		if (!issue) throw new HTTPException(404, { message: "Item not found" });
+  async getUserIssues(userId: string): Promise<IssueWithUsers[]> {
+    return await this.issueRepository.findByUserId(userId);
+  }
 
-		// Handle epicId and parentId correctly from validation
-		const updateData = {
-			...data,
-			assigneeId: data.assigneeId === "none" ? null : data.assigneeId,
-			parentId: data.parentId === "none" ? null : data.parentId,
-			epicId: data.epicId === "none" ? null : data.epicId,
-		};
+  async getDetail(issueId: string): Promise<IssueWithUsers> {
+    const issue = await this.issueRepository.findById(issueId);
+    if (!issue) throw new HTTPException(404, { message: "Issue not found" });
 
-		return await this.issueRepository.update(id, updateData);
-	}
+    if (issue.comments) {
+      issue.comments = this.nestComments(issue.comments);
+    }
 
-	async reorder(projectId: string, issueIds: string[]): Promise<void> {
-		await this.getProjectAndCheckAccess(projectId);
-		await this.issueRepository.batchUpdateOrder(issueIds);
-	}
+    return issue;
+  }
 
-	async delete(userId: string, id: string): Promise<void> {
-		const issue = await this.issueRepository.findById(id);
-		if (!issue) throw new HTTPException(404, { message: "Item not found" });
+  async getByKey(key: string): Promise<IssueWithUsers> {
+    const issue = await this.issueRepository.findByKey(key);
+    if (!issue) throw new HTTPException(404, { message: "Item not found" });
 
-		if (issue.reporterId !== userId) {
-			throw new HTTPException(403, {
-				message: "Forbidden - only reporter can delete",
-			});
-		}
-		await this.issueRepository.delete(id);
-	}
+    if (issue.comments) {
+      issue.comments = this.nestComments(issue.comments);
+    }
+
+    return issue;
+  }
+
+  async update(id: string, data: UpdateIssueSchema): Promise<Issue> {
+    const issue = await this.issueRepository.findById(id);
+    if (!issue) throw new HTTPException(404, { message: "Item not found" });
+
+    // Prevent marking parent as DONE if sub-tasks are not DONE
+    if (data.status === "DONE" && issue.type !== "SUBTASK") {
+      const hasActiveSubtasks = issue.children?.some(
+        (child) => child.status !== "DONE",
+      );
+      if (hasActiveSubtasks) {
+        throw new HTTPException(400, {
+          message:
+            "Cannot complete issue while sub-tasks are still in progress",
+        });
+      }
+    }
+
+    // Handle epicId and parentId correctly from validation
+    const updateData = {
+      ...data,
+      assigneeId: data.assigneeId === "none" ? null : data.assigneeId,
+      parentId: data.parentId === "none" ? null : data.parentId,
+      epicId: data.epicId === "none" ? null : data.epicId,
+    };
+
+    return await this.issueRepository.update(id, updateData);
+  }
+
+  async reorder(projectId: string, issueIds: string[]): Promise<void> {
+    await this.getProjectAndCheckAccess(projectId);
+    await this.issueRepository.batchUpdateOrder(issueIds);
+  }
+
+  async delete(userId: string, id: string): Promise<void> {
+    const issue = await this.issueRepository.findById(id);
+    if (!issue) throw new HTTPException(404, { message: "Item not found" });
+
+    if (issue.reporterId !== userId) {
+      throw new HTTPException(403, {
+        message: "Forbidden - only reporter can delete",
+      });
+    }
+    await this.issueRepository.delete(id);
+  }
 }
 
 const issueService = IssueService.instance;

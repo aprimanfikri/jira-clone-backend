@@ -43,7 +43,24 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
+CREATE TABLE "subtasks" (
+	"id" varchar(24) PRIMARY KEY NOT NULL,
+	"title" varchar(255) NOT NULL,
+	"description" text,
+	"status" "issue_status" DEFAULT 'TODO' NOT NULL,
+	"priority" "issue_priority" DEFAULT 'MEDIUM' NOT NULL,
+	"order" integer DEFAULT 0 NOT NULL,
+	"issue_id" varchar(24) NOT NULL,
+	"assignee_id" varchar(24),
+	"reporter_id" varchar(24) NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 ALTER TABLE "issues" ADD CONSTRAINT "issues_project_id_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "issues" ADD CONSTRAINT "issues_assignee_id_users_id_fk" FOREIGN KEY ("assignee_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "issues" ADD CONSTRAINT "issues_reporter_id_users_id_fk" FOREIGN KEY ("reporter_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "projects" ADD CONSTRAINT "projects_lead_id_users_id_fk" FOREIGN KEY ("lead_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "projects" ADD CONSTRAINT "projects_lead_id_users_id_fk" FOREIGN KEY ("lead_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "subtasks" ADD CONSTRAINT "subtasks_issue_id_issues_id_fk" FOREIGN KEY ("issue_id") REFERENCES "public"."issues"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "subtasks" ADD CONSTRAINT "subtasks_assignee_id_users_id_fk" FOREIGN KEY ("assignee_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "subtasks" ADD CONSTRAINT "subtasks_reporter_id_users_id_fk" FOREIGN KEY ("reporter_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;

@@ -50,6 +50,13 @@ class IssueRepository {
         project: {
           columns: { id: true, name: true, key: true },
         },
+        subtasks: {
+          with: {
+            assignee: {
+              columns: { id: true, name: true, email: true, image: true },
+            },
+          },
+        },
       },
     });
     return issue ?? null;
@@ -67,6 +74,13 @@ class IssueRepository {
         },
         project: {
           columns: { id: true, name: true, key: true },
+        },
+        subtasks: {
+          with: {
+            assignee: {
+              columns: { id: true, name: true, email: true, image: true },
+            },
+          },
         },
       },
     });

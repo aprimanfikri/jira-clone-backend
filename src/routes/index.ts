@@ -8,6 +8,9 @@ import profileRoute from "@/modules/profile/profile.route";
 import projectRoutes from "@/modules/project/project.routes";
 import storageRoute from "@/modules/storage/storage.route";
 import userRoutes from "@/modules/user/user.routes";
+import subtaskRoutes, {
+  standaloneSubtaskRoutes,
+} from "@/modules/subtask/subtask.routes";
 
 const routes = new OpenAPIHono();
 
@@ -37,5 +40,13 @@ standaloneIssueRouter.get("/:issueId", issueController.getDetail);
 standaloneIssueRouter.patch("/:issueId", issueController.update);
 standaloneIssueRouter.delete("/:issueId", issueController.delete);
 routes.route("/issues", standaloneIssueRouter);
+
+// Issue subtask routes: /issues/:issueId/subtasks
+const issueSubtaskRouter = new Hono();
+issueSubtaskRouter.route("/:issueId/subtasks", subtaskRoutes);
+routes.route("/issues", issueSubtaskRouter);
+
+// Standalone subtask routes: /subtasks/:subtaskId
+routes.route("/subtasks", standaloneSubtaskRoutes);
 
 export default routes;

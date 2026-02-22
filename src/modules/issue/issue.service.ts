@@ -96,6 +96,14 @@ class IssueService {
     const issue = await this.issueRepository.findById(issueId);
     if (!issue) throw new HTTPException(404, { message: "Issue not found" });
 
+    // Merge epicIssues into children for unified child list, filter out subtasks
+    if (issue.epicIssues && issue.epicIssues.length > 0) {
+      const directChildren = issue.epicIssues.filter(
+        (child) => !child.parentId,
+      );
+      issue.children = [...(issue.children || []), ...directChildren];
+    }
+
     if (issue.comments) {
       issue.comments = this.nestComments(issue.comments);
     }
@@ -106,6 +114,14 @@ class IssueService {
   async getByKey(key: string): Promise<IssueWithUsers> {
     const issue = await this.issueRepository.findByKey(key);
     if (!issue) throw new HTTPException(404, { message: "Item not found" });
+
+    // Merge epicIssues into children for unified child list, filter out subtasks
+    if (issue.epicIssues && issue.epicIssues.length > 0) {
+      const directChildren = issue.epicIssues.filter(
+        (child) => !child.parentId,
+      );
+      issue.children = [...(issue.children || []), ...directChildren];
+    }
 
     if (issue.comments) {
       issue.comments = this.nestComments(issue.comments);

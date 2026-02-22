@@ -19,6 +19,7 @@ export type IssueWithUsers = Issue & {
   reporter: { id: string; name: string; email: string; image: string | null };
   project?: { id: string; name: string; key: string };
   children?: any[]; // Using any[] to bypass recursive type issues in repository queries
+  epicIssues?: any[];
   parent?: { id: string; title: string; key: string; type: string } | null;
   epic?: { id: string; title: string; key: string; type: string } | null;
   comments?: CommentWithAuthor[];
@@ -70,6 +71,13 @@ class IssueRepository {
             },
           },
         },
+        epicIssues: {
+          with: {
+            assignee: {
+              columns: { id: true, name: true, email: true, image: true },
+            },
+          },
+        },
         comments: {
           with: {
             author: {
@@ -103,6 +111,13 @@ class IssueRepository {
           columns: { id: true, title: true, key: true, type: true },
         },
         children: {
+          with: {
+            assignee: {
+              columns: { id: true, name: true, email: true, image: true },
+            },
+          },
+        },
+        epicIssues: {
           with: {
             assignee: {
               columns: { id: true, name: true, email: true, image: true },
